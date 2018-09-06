@@ -1,0 +1,34 @@
+{
+  "name": "@ln613/compose",
+  "version": "1.0.0",
+  "description": "A set of higher order, composable functions which work with react and redux. An extension to recompose.",
+  "keywords": [
+    "javascript",
+    "recompose",
+    "redux"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ln613/compose.git"
+  },
+  "main": "dist",
+  "scripts": {
+    "start": "watch \"npm run build\" src",
+    "build": "babel src --out-dir dist",
+    "test": "jest"
+  },
+  "author": "Nan Li",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-jest": "^21.2.0",
+    "jest": "^21.2.1",
+    "watch": "^1.0.2"
+  },
+  "dependencies": {
+    "ramda": "^0.25.0"
+  }
+}
