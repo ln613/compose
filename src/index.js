@@ -1,4 +1,4 @@
-import { find, isNil, isEmpty, view, lensPath, reduce, max } from 'ramda';
+import { find, isNil, isEmpty, view, lensPath, reduce, max, equals } from 'ramda';
 import { compose, lifecycle, withProps, withHandlers, withState as _withState } from 'recompose';
 
 const firstLetterToUpper = str => str[0].toUpperCase() + str.slice(1);
@@ -10,6 +10,12 @@ export const withParams = withProps(props => ({ ...props.match.params }));
 export const withState = (prop, val) =>
   _withState(prop, 'set' + firstLetterToUpper(prop), val);
 
+export const withMount = f => lifecycle({
+  componentDidMount() {
+    f(this.props);
+  }
+});
+
 export const withLoad = (prop, key, field, force) => lifecycle({
   componentWillMount() {
     (force || isEmpty(this.props[prop])) && this.props['get' + firstLetterToUpper(prop)]({ [key || 'id']: this.props[field || 'id'] });
@@ -19,13 +25,11 @@ export const withLoadForce = (prop, key, field) => withLoad(prop, key, field, tr
 export const withLoadBy = (prop, key, force) => withLoad(prop, key, key, force);
 export const withLoadForceBy = (prop, key) => withLoad(prop, key, key, true);
 
-export const withEdit = (prop, path, initObj) => lifecycle({
-  componentWillMount() {
-    const id = +this.props.match.params.id;
-    const list = toLensPath(path || (prop + 's'));
-    const v = find(x => x.id == id, view(lensPath(list), this.props) || []);
-    this.props.setForm(v || { id, ...(initObj || {}) }, { path: prop });
-  }
+export const withEdit = (prop, path, initObj) => withNewValue((path && path.split('.')[0]) || (prop + 's'), null, p => {
+  const id = (initObj && p[initObj.id]) || +p.match.params.id;
+  const list = toLensPath(path || (prop + 's'));
+  const v = find(x => x.id == id, view(lensPath(list), p) || []);
+  p.setForm(v || { ...(initObj || {}), id }, { path: prop });
 });
 
 export const withEditList = prop => lifecycle({
@@ -41,8 +45,8 @@ export const withNewValue = (prop, val, cb) => lifecycle({
   componentWillReceiveProps(newProps) {
     const newValue = newProps[prop];
     const oldValue = this.props[prop];
-    if (isNil(val) ? newValue !== oldValue : (newValue === val && oldValue !== val))
-      cb(this.props, newValue);
+    if (isNil(val) ? !equals(newValue, oldValue) : (equals(newValue, val) && !equals(oldValue, val)))
+      cb(newProps, newValue);
   }
 });
 
@@ -52,7 +56,7 @@ const getEl = id => id ? document.getElementById(id) : window;
 const getListenerName = (event, id) => `${event}_${id || 'window'}_listener`;
 
 export const withListener = (event, f, id) => compose(
-  withHandlers({ [getListenerName(event, id)]: p => _ => f(p) }),
+  withHandlers({ [getListenerName(event, id)]: p => e => f(p, e) }),
   lifecycle({
     componentDidMount() {
       getEl(id).addEventListener(event, this.props[getListenerName(event, id)]);
@@ -63,6 +67,8 @@ export const withListener = (event, f, id) => compose(
     }
   })
 )  
+
+export const withKey = f => withListener('keydown', (p, e) => f(p, e.key, e.keyCode));
 
 export const multiLang = prop => lang => obj => obj[prop + '_' + lang] || obj[prop];
 export const multiLangName = multiLang('name');
