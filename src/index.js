@@ -25,12 +25,15 @@ export const withLoadForce = (prop, key, field) => withLoad(prop, key, field, tr
 export const withLoadBy = (prop, key, force) => withLoad(prop, key, key, force);
 export const withLoadForceBy = (prop, key) => withLoad(prop, key, key, true);
 
-export const withEdit = (prop, path, initObj) => withNewValue((path && path.split('.')[0]) || (prop + 's'), null, p => {
+const _withEdit = (p, prop, path, initObj) => {
   const id = (initObj && p[initObj.id]) || +p.match.params.id;
   const list = toLensPath(path || (prop + 's'));
   const v = find(x => x.id == id, view(lensPath(list), p) || []);
   p.setForm(v || { ...(initObj || {}), id }, { path: prop });
-});
+};
+
+export const withEdit = (prop, path, initObj) => withNewValue((path && path.split('.')[0]) || (prop + 's'), null, p => _withEdit(p, prop, path, initObj));
+export const withEditForce = (prop, path, initObj) => withHasValue((path && path.split('.')[0]) || (prop + 's'), p => _withEdit(p, prop, path, initObj));
 
 export const withEditList = prop => lifecycle({
   componentWillMount() {
@@ -46,6 +49,13 @@ export const withNewValue = (prop, val, cb) => lifecycle({
     const newValue = newProps[prop];
     const oldValue = this.props[prop];
     if (isNil(val) ? !equals(newValue, oldValue) : (equals(newValue, val) && !equals(oldValue, val)))
+      cb(newProps, newValue);
+  }
+});
+
+export const withHasValue = (prop, cb) => lifecycle({
+  componentWillReceiveProps(newProps) {
+    if (!isNil(newProps[prop]) && isNil(this.props[prop]))
       cb(newProps, newValue);
   }
 });
